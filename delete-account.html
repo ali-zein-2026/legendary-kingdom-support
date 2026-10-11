@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account Deletion Request — Legendary Kingdom</title>
+<style>
+body{background:#07070C;color:#F4E9C8;font-family:system-ui,sans-serif;max-width:520px;margin:auto;padding:24px;line-height:1.9}
+h1{color:#D4AF37}input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #D4AF37;font-size:16px;box-sizing:border-box}
+input{background:#0E0E16;color:#F4E9C8}button{background:#D4AF37;color:#07070C;font-weight:bold;cursor:pointer}
+#msg{color:#F5D77A;min-height:2em}a{color:#F5D77A}
+</style>
+</head>
+<body>
+<h1>Account Deletion Request</h1>
+<p>Enter your player name and password. Your account will be permanently deleted in 30 days. You can cancel and restore it by logging in before that time.</p>
+<input id="name" placeholder="Player name" autocomplete="username">
+<input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+<button id="go">Request Deletion</button>
+<p id="msg"></p>
+<p>Signed up with Google or Facebook? Delete your account inside the game (Settings → Delete Account) or email us at <a href="mailto:ali.zein.dev@gmail.com">ali.zein.dev@gmail.com</a>.</p>
+<script>
+const SB = 'https://oonjxtrrbuoqovtbrdcc.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vbmp4dHJyYnVvcW92dGJyZGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3TTAwODQwQWNDUSIsImV4cCI6MjRMDA0NX0.JMKkejZ4XuxDXypAHLPLHAi7e2-Qj4jNvK8ufWXyi8';
+const FAKE_DOMAIN = 'players.example.com';
+document.getElementById('go').onclick = async () => {
+  const msg = document.getElementById('msg');
+  const name = document.getElementById('name').value.trim(), pass = document.getElementById('pass').value;
+  if (!/^[A-Za-z][A-Za-z0-9_]{2,15}$/.test(name) || !pass) { msg.textContent = 'Please enter valid name and password.'; return; }
+  try {
+    const r = await fetch(SB + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: name.toLowerCase() + '@' + FAKE_DOMAIN, password: pass })
+    });
+    const s = await r.json();
+    if (!s.access_token) { msg.textContent = 'Wrong name or password.'; return; }
+    const d = await fetch(SB + '/functions/v1/request-account-deletion', {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    msg.textContent = d.ok ? 'Deletion requested. Your account will be purged in 30 days unless you log back in.' : 'An error occurred, try again.';
+  } catch (e) { msg.textContent = 'Connection error.'; }
+};
+</script>
+</body>
+</html>
